@@ -6,10 +6,8 @@ import (
 	"sync"
 )
 
-
-
 /**
-http 请求链接池
+请求链接池
  */
 type RedisPool struct {
 	res chan redis.Conn
@@ -17,15 +15,29 @@ type RedisPool struct {
 	close bool
 }
 
+type RedisConfig struct {
+	NetWork string
+	Address string
+}
+
+var (
+	netWork,
+	address string
+)
+
 //创建一个pool
-func NewRedodPool(size int) *RedisPool {
+func NewRedisPool(size int, config RedisConfig) *RedisPool {
 	hp := new(RedisPool)
-	hp.res = make(chan redis.Conn,size);
+	hp.res = make(chan redis.Conn, size);
+
+	netWork = config.NetWork
+	address = config.Address
+
 	return hp;
 }
 
 //从池子中得倒一个资源
-func (p *RedisPool) GetResource() (conn redis.Conn,err error) {
+func (p *RedisPool) GetResource() (conn redis.Conn, err error) {
 	select {
 	case r, ok := <-p.res:
 		if !ok {
@@ -40,8 +52,8 @@ func (p *RedisPool) GetResource() (conn redis.Conn,err error) {
 }
 
 //生成一个资源
-func (p *RedisPool) factory()  (conn redis.Conn, err error)  {
-	client,err := redis.Dial("tcp", "127.0.0.1:6379")
+func (p *RedisPool) factory() (conn redis.Conn, err error) {
+	client, err := redis.Dial(netWork, address)
 	return client, err
 }
 
@@ -57,9 +69,8 @@ func (p *RedisPool) Release(c redis.Conn) {
 
 	select {
 	default:
-		p.res<- c
+		p.res <- c
 		//fmt.Println("放回连接池资源" + time.Now().String())
 		///////这里忘了释放资源的操作了
 	}
 }
-

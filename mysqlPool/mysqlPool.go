@@ -6,10 +6,8 @@ import (
 	"sync"
 )
 
-
-
 /**
-http 请求链接池
+ 请求链接池
  */
 type MysqlPool struct {
 	res chan *sql.DB
@@ -17,15 +15,26 @@ type MysqlPool struct {
 	close bool
 }
 
+type MysqlConfig struct {
+	User     string
+	Password string
+	Url      string
+	Database string
+	Charset  string
+}
+
+var dataSourceName string
+
 //创建一个pool
-func NewSQLPool(size int) *MysqlPool {
+func NewSQLPool(size int, config MysqlConfig) *MysqlPool {
 	hp := new(MysqlPool)
-	hp.res = make(chan *sql.DB,size);
+	hp.res = make(chan *sql.DB, size);
+	dataSourceName = config.User + ":" + config.Password + "@" + config.Url + "/" + config.Database + "?charset=" + config.Charset
 	return hp;
 }
 
 //从池子中得倒一个资源
-func (p *MysqlPool) GetResource() (conn *sql.DB,err error) {
+func (p *MysqlPool) GetResource() (conn *sql.DB, err error) {
 	select {
 	case r, ok := <-p.res:
 		if !ok {
@@ -40,15 +49,13 @@ func (p *MysqlPool) GetResource() (conn *sql.DB,err error) {
 }
 
 //生成一个资源
-func (p *MysqlPool) factory()  (conn *sql.DB, err error)  {
-	//client,err := redis.Dial("tcp", "127.0.0.1:6379")
-	client, err := sql.Open("mysql", "root:123456@tcp(127.0.0.1:3306)/kxxs?charset=utf8mb4")
+func (p *MysqlPool) factory() (conn *sql.DB, err error) {
+	client, err := sql.Open("mysql", dataSourceName)
 	return client, err
 }
 
 //释放资源
 func (p *MysqlPool) Release(c *sql.DB) {
-	//////忘了加锁    因为close是线程不安全的
 	p.Lock()
 	defer p.Unlock()
 
@@ -58,9 +65,7 @@ func (p *MysqlPool) Release(c *sql.DB) {
 
 	select {
 	default:
-		p.res<- c
+		p.res <- c
 		//fmt.Println("放回连接池资源" + time.Now().String())
-		///////这里忘了释放资源的操作了
 	}
 }
-
