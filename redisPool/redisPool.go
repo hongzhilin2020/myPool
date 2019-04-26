@@ -33,6 +33,13 @@ func NewRedisPool(size int, config RedisConfig) *RedisPool {
 	netWork = config.NetWork
 	address = config.Address
 
+
+	for i := 0; i < size; i ++ {
+		conn, _ := hp.factory()
+		hp.res <- conn
+	}
+
+
 	return hp;
 }
 
@@ -45,9 +52,9 @@ func (p *RedisPool) GetResource() (conn redis.Conn, err error) {
 		}
 		//fmt.Println("连接池资源" + time.Now().String())
 		return r, nil
-	default:
+	//default:
 		//fmt.Println("新生成资源" + time.Now().String())
-		return p.factory()
+		//return p.factory()
 	}
 }
 
