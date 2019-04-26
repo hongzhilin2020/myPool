@@ -20,6 +20,12 @@ type HttpPool struct {
 func NewHttpPool(size int) *HttpPool {
 	hp := new(HttpPool)
 	hp.res = make(chan *http.Client,size);
+
+	for i := 0; i < size; i ++ {
+		conn, _ := hp.factory()
+		hp.res <- conn
+	}
+
 	return hp;
 }
 
@@ -32,9 +38,9 @@ func (p *HttpPool) GetResource() (*http.Client, error) {
 		}
 		//fmt.Println("============连接池资源===========")
 		return r, nil
-	default:
+	//default:
 		//fmt.Println("!!!!!!!!!!!!新生成资源!!!!!!!!!!!")
-		return p.factory()
+		//return p.factory()
 	}
 }
 
