@@ -26,11 +26,11 @@ type MysqlConfig struct {
 var dataSourceName string
 
 //创建一个pool
-func NewSQLPool(size int, config MysqlConfig) *MysqlPool {
+func NewMysqlPool(size int, config MysqlConfig) *MysqlPool {
 	hp := new(MysqlPool)
-	hp.res = make(chan *sql.DB, size);
+	hp.res = make(chan *sql.DB, size)
 	dataSourceName = config.User + ":" + config.Password + "@" + config.Url + "/" + config.Database + "?charset=" + config.Charset
-	return hp;
+	return hp
 }
 
 //从池子中得倒一个资源
@@ -40,11 +40,7 @@ func (p *MysqlPool) GetResource() (conn *sql.DB, err error) {
 		if !ok {
 			return nil, errors.New("pool is close")
 		}
-		//fmt.Println("连接池资源" + time.Now().String())
 		return r, nil
-	default:
-		//fmt.Println("新生成资源" + time.Now().String())
-		return p.factory()
 	}
 }
 
@@ -56,9 +52,6 @@ func (p *MysqlPool) factory() (conn *sql.DB, err error) {
 
 //释放资源
 func (p *MysqlPool) Release(c *sql.DB) {
-	p.Lock()
-	defer p.Unlock()
-
 	if p.close {
 		return
 	}
@@ -66,6 +59,26 @@ func (p *MysqlPool) Release(c *sql.DB) {
 	select {
 	default:
 		p.res <- c
-		//fmt.Println("放回连接池资源" + time.Now().String())
 	}
+}
+
+// 关闭池子内的连接
+func (p *MysqlPool) Close() {
+	p.Lock()
+	defer p.Unlock()
+
+	for {
+		select {
+		case res, ok := <-p.res:
+			if ok != nil {
+				continue
+			}
+			// 先把标记设置为关闭状态
+			defer res.Close()
+		default:
+			goto End
+		}
+	}
+End:
+	p.close = true
 }

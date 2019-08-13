@@ -47,18 +47,15 @@ func (p *EsPool) GetResource() (conn *elastic.Client, err error) {
 
 //生成一个资源
 func (p *EsPool) factory() (*elastic.Client, error) {
-
 	client, err := elastic.NewClient(
 		elastic.SetSniff(false),
-		elastic.SetURL(url))
+		elastic.SetURL(url),
+	)
 	return client, err
 }
 
 //释放资源
 func (p *EsPool) Release(c *elastic.Client) {
-	p.Lock()
-	defer p.Unlock()
-
 	if p.close {
 		return
 	}

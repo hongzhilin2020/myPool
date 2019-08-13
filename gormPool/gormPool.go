@@ -37,7 +37,7 @@ func NewGormPool(size int, config GormConfig) *GormPool {
 		hp.res <- conn
 	}
 
-	return hp;
+	return hp
 }
 
 //从池子中得倒一个资源
@@ -47,25 +47,17 @@ func (p *GormPool) GetResource() (conn *gorm.DB, err error) {
 		if !ok {
 			return nil, errors.New("pool is close")
 		}
-		//fmt.Println("连接池资源" + time.Now().String())
 		return r, nil
-		//default:
-		//	fmt.Println("新生成资源" + time.Now().String())
-		//	return p.factory()
 	}
 }
 
 //生成一个资源
 func (p *GormPool) factory() (*gorm.DB, error) {
-	engine, err := gorm.Open(driverName, dataSourceName)
-	return engine, err
+	return gorm.Open(driverName, dataSourceName)
 }
 
 //释放资源
 func (p *GormPool) Release(c *gorm.DB) {
-	p.Lock()
-	defer p.Unlock()
-
 	if p.close {
 		return
 	}
@@ -73,6 +65,25 @@ func (p *GormPool) Release(c *gorm.DB) {
 	select {
 	default:
 		p.res <- c
-		//fmt.Println("放回连接池资源" + time.Now().String())
 	}
+}
+
+// 关闭池子内的连接
+func (p  *GormPool) Close() {
+	p.Lock()
+	defer p.Unlock()
+
+	for {
+		select {
+		case res,ok :=<-p.res:
+			if ok != nil {
+				continue
+			}
+			defer res.Close()
+		default:
+			goto End
+		}
+	}
+	End:
+	p.close = true
 }

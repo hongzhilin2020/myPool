@@ -29,18 +29,15 @@ var (
 func NewRedisPool(size int, config RedisConfig) *RedisPool {
 	hp := new(RedisPool)
 	hp.res = make(chan redis.Conn, size);
-
 	netWork = config.NetWork
 	address = config.Address
-
 
 	for i := 0; i < size; i ++ {
 		conn, _ := hp.factory()
 		hp.res <- conn
 	}
 
-
-	return hp;
+	return hp
 }
 
 //从池子中得倒一个资源
@@ -50,26 +47,17 @@ func (p *RedisPool) GetResource() (conn redis.Conn, err error) {
 		if !ok {
 			return nil, errors.New("pool is close")
 		}
-		//fmt.Println("连接池资源" + time.Now().String())
 		return r, nil
-	//default:
-		//fmt.Println("新生成资源" + time.Now().String())
-		//return p.factory()
 	}
 }
 
 //生成一个资源
 func (p *RedisPool) factory() (conn redis.Conn, err error) {
-	client, err := redis.Dial(netWork, address)
-	return client, err
+	return redis.Dial(netWork, address)
 }
 
 //释放资源
 func (p *RedisPool) Release(c redis.Conn) {
-	//////忘了加锁    因为close是线程不安全的
-	p.Lock()
-	defer p.Unlock()
-
 	if p.close {
 		return
 	}
@@ -77,7 +65,26 @@ func (p *RedisPool) Release(c redis.Conn) {
 	select {
 	default:
 		p.res <- c
-		//fmt.Println("放回连接池资源" + time.Now().String())
-		///////这里忘了释放资源的操作了
 	}
+}
+
+// 关闭池子内的连接
+func (p *RedisPool) Close() {
+	p.Lock()
+	defer p.Unlock()
+
+	for {
+		select {
+		case res, ok := <-p.res:
+			if ok != nil {
+				continue
+			}
+			// 先把标记设置为关闭状态
+			defer res.Close()
+		default:
+			goto End
+		}
+	}
+End:
+	p.close = true
 }
