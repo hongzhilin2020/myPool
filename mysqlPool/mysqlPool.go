@@ -7,8 +7,8 @@ import (
 )
 
 /**
- 请求链接池
- */
+请求链接池
+*/
 type MysqlPool struct {
 	res chan *sql.DB
 	sync.Mutex
@@ -70,7 +70,7 @@ func (p *MysqlPool) Close() {
 	for {
 		select {
 		case res, ok := <-p.res:
-			if ok != nil {
+			if ok {
 				continue
 			}
 			// 先把标记设置为关闭状态

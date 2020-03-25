@@ -23,14 +23,14 @@ var (
 //创建一个pool
 func NewEsPool(size int, u string) *EsPool {
 	hp := new(EsPool)
-	hp.res = make(chan *elastic.Client, size);
+	hp.res = make(chan *elastic.Client, size)
 	url = u
 
-	for i := 0; i < size; i ++ {
+	for i := 0; i < size; i++ {
 		conn, _ := hp.factory()
 		hp.res <- conn
 	}
-	return hp;
+	return hp
 }
 
 //从池子中得倒一个资源

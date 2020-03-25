@@ -8,20 +8,18 @@ import (
 
 /**
 http 请求链接池
- */
+*/
 type HttpPool struct {
 	res chan *http.Client
 	sync.Mutex
 	close bool
 }
 
-
 //创建一个pool
 func NewHttpPool(size int) *HttpPool {
 	hp := new(HttpPool)
-	hp.res = make(chan *http.Client,size);
-
-	for i := 0; i < size; i ++ {
+	hp.res = make(chan *http.Client, size)
+	for i := 0; i < size; i++ {
 		conn, _ := hp.factory()
 		hp.res <- conn
 	}
@@ -41,10 +39,10 @@ func (p *HttpPool) GetResource() (*http.Client, error) {
 }
 
 //生成一个资源
-func (p *HttpPool) factory() (*http.Client, error)  {
+func (p *HttpPool) factory() (*http.Client, error) {
 	client := new(http.Client)
 
-	return client,nil;
+	return client, nil
 }
 
 //释放资源
@@ -55,7 +53,6 @@ func (p *HttpPool) Release(c *http.Client) {
 
 	select {
 	default:
-		p.res<- c
+		p.res <- c
 	}
 }
-

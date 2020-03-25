@@ -8,7 +8,7 @@ import (
 
 /**
 请求链接池
- */
+*/
 type GormPool struct {
 	res chan *gorm.DB
 	sync.Mutex
@@ -28,11 +28,11 @@ var (
 //创建一个pool
 func NewGormPool(size int, config GormConfig) *GormPool {
 	hp := new(GormPool)
-	hp.res = make(chan *gorm.DB, size);
+	hp.res = make(chan *gorm.DB, size)
 	driverName = config.DriverName
 	dataSourceName = config.DataSourceName
 
-	for i := 0; i < size; i ++ {
+	for i := 0; i < size; i++ {
 		conn, _ := hp.factory()
 		hp.res <- conn
 	}
@@ -69,14 +69,14 @@ func (p *GormPool) Release(c *gorm.DB) {
 }
 
 // 关闭池子内的连接
-func (p  *GormPool) Close() {
+func (p *GormPool) Close() {
 	p.Lock()
 	defer p.Unlock()
 
 	for {
 		select {
-		case res,ok :=<-p.res:
-			if ok != nil {
+		case res, ok := <-p.res:
+			if ok {
 				continue
 			}
 			defer res.Close()
@@ -84,6 +84,6 @@ func (p  *GormPool) Close() {
 			goto End
 		}
 	}
-	End:
+End:
 	p.close = true
 }

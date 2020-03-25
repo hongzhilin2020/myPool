@@ -8,7 +8,7 @@ import (
 
 /**
 请求链接池
- */
+*/
 type RedisPool struct {
 	res chan redis.Conn
 	sync.Mutex
@@ -28,11 +28,11 @@ var (
 //创建一个pool
 func NewRedisPool(size int, config RedisConfig) *RedisPool {
 	hp := new(RedisPool)
-	hp.res = make(chan redis.Conn, size);
+	hp.res = make(chan redis.Conn, size)
 	netWork = config.NetWork
 	address = config.Address
 
-	for i := 0; i < size; i ++ {
+	for i := 0; i < size; i++ {
 		conn, _ := hp.factory()
 		hp.res <- conn
 	}
@@ -76,7 +76,7 @@ func (p *RedisPool) Close() {
 	for {
 		select {
 		case res, ok := <-p.res:
-			if ok != nil {
+			if ok {
 				continue
 			}
 			// 先把标记设置为关闭状态
